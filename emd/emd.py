@@ -1,10 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.fftpack import fft
 from scipy.signal import find_peaks
 from scipy.interpolate import interp1d
 
-def get_imf(signal, fs):
+def emd(signal, fs):
     upper_peaks, _ = find_peaks(signal)
     lower_peaks, _ = find_peaks(-signal)
 
@@ -12,8 +10,11 @@ def get_imf(signal, fs):
         return signal
 
     time_axis = np.linspace(0, len(signal) / fs, len(signal))
+    prev_imf = signal
 
-    while upper_peaks.size > 2 and lower_peaks.size > 2 :
+    sd = 1
+
+    while upper_peaks.size > 2 and lower_peaks.size > 2 and sd > 0.3:
         upper_envelope = interp1d(upper_peaks/fs, signal[upper_peaks], kind = 'cubic', fill_value = 'extrapolate')(time_axis)
         lower_envelope = interp1d(lower_peaks/fs, signal[lower_peaks], kind = 'cubic', fill_value = 'extrapolate')(time_axis)
 
@@ -25,6 +26,9 @@ def get_imf(signal, fs):
 
         residual = average_envelope
         imf = signal - average_envelope
+
+        sd = np.sum(np.square(imf - prev_imf))
+        print(sd)
 
         signal = residual
         upper_peaks, _ = find_peaks(signal)
